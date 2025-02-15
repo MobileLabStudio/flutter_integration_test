@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as dev;
 import 'dart:io';
 
 import 'package:shelf/shelf.dart';
@@ -10,51 +11,46 @@ import '../integration_test_server.dart';
 
 part 'shelf_proxy_server.dart';
 
-final class ShelfIntegrationTestServer implements IntegrationTestServer, HttpOverrides {
-  ShelfIntegrationTestServer([String proxyAddress = 'localhost', int proxyPort = 8888])
-      : _proxyServer = ShelfProxyServer(proxyAddress, proxyPort);
-
-  late final ShelfProxyServer _proxyServer;
+final class ShelfIntegrationTestServer extends HttpOverrides implements IntegrationTestServer {
+  late final _shelf = ShelfProxyServer();
 
   HttpOverrides get httpOverrides => this;
 
   @override
-  Future<void> serve() => _proxyServer.start();
-
-  @override
-  Future<void> close() => _proxyServer.stop();
-
-  @override
-  void mockResponse(FakeHttpResponse mock) {
-    _proxyServer.setMock(mock, consumable: false);
+  Future<void> serve(IntegrationTestServerConfig config) async {
+    await _shelf.serve(config.address, config.port, shared: config.shared);
   }
 
   @override
-  void mockConsumableResponse(FakeHttpResponse mock) {
-    _proxyServer.setMock(mock, consumable: true);
+  Future<void> close() => _shelf.close();
+
+  @override
+  void mock(FakeHttpResponse mock) {
+    _shelf.setMock(mock, consumable: false);
   }
 
   @override
-  void unMockResponse(FakeHttpResponse mock) {
-    _proxyServer.removeMock(mock);
+  void mockAndConsume(FakeHttpResponse mock) {
+    _shelf.setMock(mock, consumable: true);
   }
 
   @override
-  HttpClient createHttpClient(SecurityContext? context) {
-    HttpOverrides.global = null;
-    final client = HttpClient(context: context);
-    HttpOverrides.global = this;
-    return client;
+  void unmock(FakeHttpResponse mock) {
+    _shelf.removeMock(mock);
   }
 
   @override
-  String findProxyFromEnvironment(Uri url, Map<String, String>? _) {
-    for (final mock in [..._proxyServer._mocks, ..._proxyServer._consumableMocks]) {
+  String findProxyFromEnvironment(Uri url, Map<String, String>? env) {
+    final mocks = [..._shelf._mocks, ..._shelf._consumableMocks];
+    dev.log('🔎 Checking if proxy must be used - Examining ${mocks.length} mocks');
+    for (final mock in mocks) {
       if (mock.hasMatchInUrl(url)) {
-        return _proxyServer.proxy;
+        dev.log('🔀 Using proxy for: $url');
+        return _shelf.proxy;
       }
     }
 
+    dev.log('📡 Ommiting proxy for: $url');
     return 'DIRECT';
   }
 }

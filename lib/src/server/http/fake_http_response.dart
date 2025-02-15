@@ -9,7 +9,7 @@ final class FakeHttpResponse {
     required this.method,
     required this.pattern,
     required this.statusCode,
-    this.response,
+    this.body,
     this.headers,
     this.encoding,
     this.context,
@@ -18,7 +18,7 @@ final class FakeHttpResponse {
   final String method;
   final RegExp pattern;
   final int statusCode;
-  final Object? response;
+  final Object? body;
   final Map<String, /* String | List<String> */ Object>? headers;
   final Encoding? encoding;
   final Map<String, Object>? context;
@@ -32,7 +32,7 @@ final class FakeHttpResponse {
         method,
         pattern,
         statusCode,
-        response,
+        body,
         headers,
         encoding,
         context,
