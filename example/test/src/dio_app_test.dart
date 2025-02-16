@@ -3,11 +3,11 @@ import 'package:flutter_integration_test_example/src/dio_app.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  integrationTest(
+  semiIntegrationTest(
     'Can mock response for dio client',
-    (tester, server) async {
+    (tester, helper) async {
       const expectedResponseBody = 'Test response';
-      server.mockAndConsume(
+      helper.server.mockAndConsume(
         FakeHttpResponse(
           method: 'GET',
           pattern: RegExp(r'test$'),

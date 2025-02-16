@@ -1,29 +1,34 @@
 import 'dart:developer' as dev;
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:meta/meta.dart';
 
-import 'src/binding/flutter_integration_test_widgets_flutter_binding.dart';
-import 'src/server/integration_test_server.dart';
+import 'src/binding/semi_integration_test_widgets_flutter_binding.dart';
 import 'src/server/pool/independent_integration_test_server_pool.dart';
 import 'src/server/shelf/shelf_integration_test_server.dart';
+import 'src/util/helper/test_helper.dart';
+import 'src/util/mock_clock.dart';
+import 'src/util/semi_integration_test_horeographer.dart';
 
-export 'src/binding/flutter_integration_test_widgets_flutter_binding.dart';
+export 'package:clock/clock.dart';
+
+export 'src/binding/binding.dart';
 export 'src/extension/extension.dart';
 export 'src/server/http/fake_http_response.dart';
 export 'src/server/integration_test_server.dart';
 export 'src/server/pool/integration_test_server_pool.dart';
 
-typedef FlutterIntegrationTestCallback = Future<void> Function(
+typedef SemiIntegrationTestCallback = Future<void> Function(
   WidgetTester tester,
-  IntegrationTestServer server,
+  TestHelper helper,
 );
 
 @isTest
-void integrationTest(
+void semiIntegrationTest(
   String description,
-  FlutterIntegrationTestCallback callback, {
+  SemiIntegrationTestCallback callback, {
   bool? skip,
   Timeout? timeout,
   bool semanticsEnabled = true,
@@ -31,33 +36,38 @@ void integrationTest(
   dynamic tags,
   int? retry,
   IndependentIntegrationTestServerPool? serverPool,
+  String initialRoute = '/',
 }) {
-  // Setup binding
-  FlutterIntegrationTestWidgetsFlutterBinding.ensureInitialized();
-
-  // Setup server
-  final effectiveServerPool = serverPool ?? IndependentIntegrationTestServerPool.instance;
-  final server = ShelfIntegrationTestServer();
-  final httpOverrides = server;
+  // Setup binding. This must be called before `testWidgets` to create our own binding
+  final binding = SemiIntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets(
     description,
     (tester) async {
-      // Assigning global HttpOverrides must be invoked inside each test callback
-      // to avoid using same proxy by multuple tests instances
-      HttpOverrides.global = httpOverrides;
+      await SemiIntegrationTestHoreographer.instance.runTest(() async {
+        // Setup server
+        final effectiveServerPool = serverPool ?? IndependentIntegrationTestServerPool.instance;
+        final server = ShelfIntegrationTestServer();
 
-      final config = effectiveServerPool.findConfig();
-      try {
-        dev.log('🧪 Starting test: `$description`');
-        await server.serve(config);
-        await callback(tester, server);
-      } catch (_) {
-        rethrow;
-      } finally {
-        await server.close();
-        effectiveServerPool.releasePort(config.port);
-      }
+        final httpOverrides = server;
+        HttpOverrides.global = httpOverrides;
+
+        binding.setInitialRoute(initialRoute);
+
+        final config = effectiveServerPool.findConfig();
+        try {
+          dev.log('🧪 Starting test: `$description`');
+          final clock = MockClock();
+          final helper = TestHelper(tester, clock, binding, server);
+          await server.serve(config);
+          await withClock(clock, () => callback(tester, helper));
+        } catch (_) {
+          rethrow;
+        } finally {
+          await server.close();
+          effectiveServerPool.releasePort(config.port);
+        }
+      });
     },
     skip: skip,
     timeout: timeout,

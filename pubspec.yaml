@@ -14,6 +14,7 @@ dependencies:
     sdk: flutter
   integration_test:
     sdk: flutter
+  clock: ^1.1.1
   meta: ^1.15.0
   shelf: ^1.4.2
   shelf_router: ^1.1.4

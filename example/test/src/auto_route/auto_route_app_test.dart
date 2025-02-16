@@ -5,30 +5,45 @@ import 'package:flutter_integration_test_example/src/auto_route/routes/screens.d
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  integrationTest('Can push and pop pages', (tester, server) async {
-    await tester.pumpWidget(const AutoRouteApp());
-    await tester.pumpAndSettle();
-    final buttonNext = find.byType(FilledButton);
-    final screen1 = find.byType(Screen1);
-    final screen2 = find.byType(Screen2);
-    final screen3 = find.byType(Screen3);
+  semiIntegrationTest(
+    'Handles deeplink',
+    (tester, helper) async {
+      await tester.pumpWidget(const AutoRouteApp());
+      await tester.pumpAndSettle();
+      final screen3 = find.byType(Screen3);
+      expect(screen3, findsOneWidget);
+    },
+    initialRoute: '/screen3',
+  );
 
-    expect(screen1, findsOneWidget);
+  semiIntegrationTest(
+    'Can push and pop pages',
+    (tester, helper) async {
+      await tester.pumpWidget(const AutoRouteApp());
+      await tester.pumpAndSettle();
+      final buttonNext = find.byType(FilledButton);
+      final screen1 = find.byType(Screen1);
+      final screen2 = find.byType(Screen2);
+      final screen3 = find.byType(Screen3);
 
-    await tester.tap(buttonNext);
-    await tester.pumpAndSettle();
-    expect(screen2, findsOneWidget);
+      expect(screen1, findsOneWidget);
 
-    await tester.tap(buttonNext);
-    await tester.pumpAndSettle();
-    expect(screen3, findsOneWidget);
+      await tester.tap(buttonNext);
+      await tester.pumpAndSettle();
+      expect(screen2, findsOneWidget);
 
-    tester.pop();
-    await tester.pumpAndSettle();
-    expect(screen2, findsOneWidget);
+      await tester.tap(buttonNext);
+      await tester.pumpAndSettle();
+      expect(screen3, findsOneWidget);
 
-    tester.pop();
-    await tester.pumpAndSettle();
-    expect(screen1, findsOneWidget);
-  });
+      tester.pop();
+      await tester.pumpAndSettle();
+      expect(screen2, findsOneWidget);
+
+      tester.pop();
+      await tester.pumpAndSettle();
+      expect(screen1, findsOneWidget);
+    },
+    initialRoute: '/',
+  );
 }

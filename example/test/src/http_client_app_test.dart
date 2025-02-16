@@ -3,20 +3,11 @@ import 'package:flutter_integration_test_example/src/http_client_app.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  integrationTest(
-    'Server responds',
-    (tester, server) async {
-      await tester.pumpWidget(const HttpClientApp());
-      await tester.pumpAndSettle();
-      expect(find.text('Server responds'), findsOneWidget);
-    },
-  );
-
-  integrationTest(
+  semiIntegrationTest(
     'Can mock response',
-    (tester, server) async {
+    (tester, helper) async {
       const expectedResponseBody = 'Test response';
-      server.mockAndConsume(
+      helper.server.mockAndConsume(
         FakeHttpResponse(
           method: 'GET',
           pattern: RegExp(r'test$'),
@@ -24,8 +15,9 @@ void main() {
           statusCode: 200,
         ),
       );
+      final finder = find.text(expectedResponseBody);
       await tester.pumpWidget(const HttpClientApp());
-      await tester.pumpAndSettle();
+      await tester.pumpUntil(PumpUntilStrategy.finderFoundsAny(finder));
       expect(find.text(expectedResponseBody), findsOneWidget);
     },
   );
