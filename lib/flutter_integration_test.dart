@@ -10,6 +10,7 @@ import 'src/server/pool/independent_integration_test_server_pool.dart';
 import 'src/server/shelf/shelf_integration_test_server.dart';
 
 export 'src/binding/flutter_integration_test_widgets_flutter_binding.dart';
+export 'src/extension/extension.dart';
 export 'src/server/http/fake_http_response.dart';
 export 'src/server/integration_test_server.dart';
 export 'src/server/pool/integration_test_server_pool.dart';
